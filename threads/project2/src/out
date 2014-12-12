@@ -1,0 +1,525 @@
+dlx.h
+dlxos.h
+filesys.c
+filesys.h
+lab2-api.h
+10a11,12
+> #include "queue.h"
+> 
+13d14
+< #define BUFFERSIZE       5
+29,31c30,40
+< sem_t sem_create(int count);		//trap 0x450 Calls SemCreate()
+< int sem_wait(sem_t sem);		//trap 0x451 Calls SemHandleWait()
+< int sem_signal(sem_t sem);		//trap 0x452 Calls SemHandleSignal()
+---
+> sem_t sem_create(int count);		//trap 0x450
+> int sem_wait(sem_t sem);		//trap 0x451
+> int sem_signal(sem_t sem);		//trap 0x452
+> 
+> typedef struct buffer{
+>         sem_t buff_sem;
+>         sem_t oxy_sem;
+>         sem_t hyd_sem;
+>         int num_hyd;
+>         int num_oxy;
+> }buffer;
+memory.c
+memory.h
+misc.c
+misc.h
+process.c
+15a16
+> float MyFuncRetZero();
+452c453
+<     dum[2] = MEMORY_PAGE_SIZE - SIZE_ARG_BUFF + offset;
+---
+>     dum[2] = MEMORY_PAGE_SIZE - SIZE_ARG_BUFF + offset; 
+709c710
+<   char *param[12]={NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+---
+>   char *param[12]={NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
+712c713
+< 
+---
+>   
+713a715,716
+>   printf("Hi Uday, How are you?\n");
+>   MyFuncRetZero();
+723c726
+<   for (i = 0; i < argc; i++)
+---
+>   for (i = 0; i < argc; i++) 
+725c728
+<     if (argv[i][0] == '-')
+---
+>     if (argv[i][0] == '-') 
+727c730
+<       switch (argv[i][1])
+---
+>       switch (argv[i][1]) 
+749c752
+< 	while ((n = ProcessGetFromFile (fd, buf, &addr, sizeof (buf))) > 0)
+---
+> 	while ((n = ProcessGetFromFile (fd, buf, &addr, sizeof (buf))) > 0) 
+751c754
+< 	  for (j = 0; j < n; j += 4)
+---
+> 	  for (j = 0; j < n; j += 4) 
+814a818,822
+> float MyFuncRetZero()
+> {
+>   return 0;
+> }
+> 
+830c838
+< 
+---
+>   
+836c844
+< 
+---
+>     
+859c867
+< 
+---
+>   
+process.h
+9c9
+< #ifndef	_process_h_
+---
+> #ifndef	_process_h__
+queue.c
+59a60
+> 
+queue.h
+18a19
+> 
+32,38d32
+< inline
+< void
+< QueueLinkInit (Link *l, void *obj)
+< {
+<     l->next = NULL;
+<     l->object = obj;
+< }
+83c77
+< QueueInsertFirst (Queue *q, Link *l)
+---
+> QueueRemove (Link *l)
+85c79,84
+<     QueueInsertAfter (q, (Link *)q, l);
+---
+>     if (l->queue->nitems > 0) {
+> 	l->prev->next = l->next;
+> 	l->next->prev = l->prev;
+> 	l->queue->nitems -= 1;
+>     }
+>     l->next = NULL;
+90c89
+< QueueInsertLast (Queue *q, Link *l)
+---
+> QueueInsertFirst (Queue *q, Link *l)
+92c91
+<     QueueInsertAfter (q, QueueLast(q), l);
+---
+>     QueueInsertAfter (q, (Link *)q, l);
+97c96
+< QueueRemove (Link *l)
+---
+> QueueInsertLast (Queue *q, Link *l)
+99,104c98
+<     if (l->queue->nitems > 0) {
+< 	l->prev->next = l->next;
+< 	l->next->prev = l->prev;
+< 	l->queue->nitems -= 1;
+<     }
+<     l->next = NULL;
+---
+>     QueueInsertAfter (q, QueueLast(q), l);
+106a101
+> 
+123c118
+< extern Link	*QueueAllocLink ();
+---
+>  extern Link	*QueueAllocLink ();
+share_memory.h
+synch.c
+12a13,14
+> static Lock  locks[MAX_LOCKS];
+> static Cond conds[MAX_CONDS];
+14c16
+< extern struct PCB *currentPCB; 
+---
+> extern struct PCB *currentPCB;
+20c22
+< void 
+---
+> void
+31c33,34
+< 	// Your stuff for initializing locks goes here
+---
+>       locks[i].inuse = 0;
+> 
+35c38,39
+< 	// Your stuff for initializing Condition variables goes here
+---
+>       conds[i].inuse = 0;
+> 
+51a56
+> 
+61c66
+< sem_t 
+---
+> sem_t
+78c83
+<     
+---
+> 
+87c92
+< 
+---
+> 
+93d97
+< //      OR section 2.3 of Modern Operating Systems,
+144c148
+< //	_OSC_ OR section 2.3 of Modern Operating Systems.
+---
+> //	_OSC_.
+206c210,232
+<   // Your stuff goes here
+---
+>   lock_t x;
+>   uint32  intrval;
+> 
+>   intrval = DisableIntrs();
+>   for(x=0; x < MAX_LOCKS; x++)
+>   {
+>     if(locks[x].inuse == 0)
+>     {
+>       locks[x].inuse = 1;
+>       locks[x].pid = -1;
+>       break;
+>     }
+>   }
+>   RestoreIntrs(intrval);
+> 
+>     if(x==MAX_LOCKS)
+>       return INVALID_LOCK;
+> 
+>     SemInit(&(locks[x].semlock), 1);
+> 
+> 
+>    return x;
+> 
+212,213c238,239
+< //	This routine acquires a lock given its handle. The handle must be a 
+< //	valid handle for this routine to succeed. In that case this routine 
+---
+> //	This routine acquires a lock given its handle. The handle must be a
+> //	valid handle for this routine to succeed. In that case this routine
+222c248,265
+<   //Your stuff goes here
+---
+>   if (    (lock < 0)
+>        || (lock >= 64) )
+>        {
+>          return 1;
+>        }
+> 
+>   if ( locks[lock].pid == GetCurrentPid() )
+>   {
+>     return 0;
+>   }
+> 
+> 
+>   SemWait(&(locks[lock].semlock));
+> 
+>   locks[lock].pid = GetCurrentPid();
+> 
+>   return 0;
+> 
+237,238c280,304
+<   // Your stuff goes here
+< }
+---
+> 
+>     if (    (lock < 0)
+>        || (lock >= 64) )
+>        {
+>          return 1;
+>        }
+> 
+>    if ( locks[lock].inuse == 0)
+>    {
+>       return 1;
+>   }
+> 
+>    if ( (locks[lock].pid) == GetCurrentPid() )
+>    {
+>            locks[lock].pid = -1;
+> 
+> 	   SemSignal(&(locks[lock].semlock));
+> 
+> 
+> 
+> 
+> 	   return 0; 
+>       }
+>  return 1;
+>  }
+247,248c313,314
+< //	it should have been obtained via previous call to LockCreate(). 
+< //	
+---
+> //	it should have been obtained via previous call to LockCreate().
+> //
+257c323,361
+<   // Your stuff goes here
+---
+>   int I;
+>   uint32 intrval;
+>   intrval = DisableIntrs();
+> 
+>   if (  lock <0
+>        || lock > 63 )
+>    {
+>     printf("Invalid lock in condcreate\n");
+>     return 1;
+>     }
+> 
+> 
+>   for(I=0; I< MAX_CONDS; I++)
+>   {
+>     if(conds[I].inuse == 0)
+>     {
+>       conds[I].inuse = 1;
+>       conds[I].lockcond = lock;
+>       conds[I].condcounter = 0;
+>       break;
+>     }
+>   }
+> 
+>  RestoreIntrs(intrval);
+> 
+> 
+>  if(I == MAX_CONDS)
+>  {
+>    return INVALID_COND;
+>  }
+> 
+> 
+>   SemInit(&(conds[I].semcond), 0);
+> 
+> 
+>  return I;
+> 
+> 
+> 
+286c390,417
+<   // Your stuff goes here
+---
+>   if (   (cond < 0)
+>       || (cond > 31) )
+>   {
+>     printf ("Invalid Cond\n");
+>     return 1;
+>   }
+> 
+>    if ( locks[conds[cond].lockcond].pid != GetCurrentPid())
+>   {
+>     return 1;
+>   }
+> 
+>   if ( (conds[cond].inuse) != 1)
+>   {
+>     printf("Invalid Cond\n");
+>     return 1;
+>   }
+> 
+> 
+>    conds[cond].condcounter++;
+>    LockHandleRelease(conds[cond].lockcond);
+> 
+>    SemWait(&(conds[cond].semcond));
+> 
+>    LockHandleAcquire(conds[cond].lockcond);
+> 
+>    return 0;
+> 
+311c442,468
+<   // Your stuff goes here
+---
+>   if (conds[cond].inuse != 1)
+>   {
+>     printf("Lock is not is use\n ");
+>     return 1;
+>   }
+> 
+>   if (   (cond < 0)
+>       || (cond > 31) )
+>   {
+>     printf ("Invalid Cond\n");
+>     return 1;
+>   }
+> 
+> 
+>   if ( locks[conds[cond].lockcond].pid != GetCurrentPid())
+>   {
+>     return 1;
+>   }
+> 
+>   if (conds[cond].condcounter >= 1)
+>   {
+>      SemSignal(&(conds[cond].semcond));
+>     conds[cond].condcounter--;
+>     return 0;
+>   }
+> return 0;
+> 
+332c489,521
+<   // Your stuff goes here
+---
+> 
+>   if (conds[cond].inuse != 1)
+>   {
+>     printf("Lock is not is use\n ");
+>     return 1;
+>   }
+> 
+>   if (   (cond < 0)
+>       || (cond > 31) )
+>   {
+>     printf ("Invalid Cond\n");
+>     return 1;
+>   }
+> 
+> 
+>   if ( locks[conds[cond].lockcond].pid != GetCurrentPid())
+>   {
+>     return 1;
+>   }
+> 
+> 
+> if ( conds[cond].condcounter > 0 )
+> {
+>   do
+>   {
+>      SemSignal(&(conds[cond].semcond));
+>      conds[cond].condcounter--;
+>   }while(conds[cond].condcounter > 0);
+> 
+>   return 0;
+> }
+> 
+> 
+synch.h
+2,26c2,26
+< //	synch.h
+< //
+< //	Include file for synchronization stuff.  The synchronization
+< //	primitives include:
+< //	Semaphore
+< //	Lock
+< //	Condition
+< //
+< //	Semaphores are the only "native" synchronization primitive.
+< //	Condition variables and locks are implemented using semaphores.
+< //
+< 
+< #ifndef	_synch_h_
+< #define	_synch_h_
+< 
+< #include "queue.h"
+< 
+< #define MAX_SEMS	32	//Maximum 32 semaphores allowed in the system
+< #define MAX_LOCKS	64	//Maximum 64 locks allowed in the system
+< 				//This is because condition vars also use
+< 				//locks from the same pool
+< #define MAX_CONDS	32	//Maximum 32 conds allowed in the system
+< 
+< typedef int sem_t;
+< typedef int lock_t;
+---
+> //	synch.h
+> //
+> //	Include file for synchronization stuff.  The synchronization
+> //	primitives include:
+> //	Semaphore
+> //	Lock
+> //	Condition
+> //
+> //	Semaphores are the only "native" synchronization primitive.
+> //	Condition variables and locks are implemented using semaphores.
+> //
+> 
+> #ifndef	_synch_h_
+> #define	_synch_h_
+> 
+> #include "queue.h"
+> 
+> #define MAX_SEMS	32	//Maximum 32 semaphores allowed in the system
+> #define MAX_LOCKS	64	//Maximum 64 locks allowed in the system
+> 				//This is because condition vars also use
+> 				//locks from the same pool
+> #define MAX_CONDS	32	//Maximum 32 conds allowed in the system
+> 
+> typedef int sem_t;
+> typedef int lock_t;
+28,43c28,43
+< 
+< #define INVALID_SEM -1
+< #define INVALID_LOCK -1
+< #define INVALID_PROC -1
+< #define INVALID_COND -1
+< typedef struct Sem {
+<     Queue	waiting;
+<     int		count;
+<     uint32	inuse; 		//indicates whether the semaphore is being
+<     				//used by any process
+< } Sem;
+< 
+< extern void	SemInit (Sem *, int);
+< extern void	SemWait (Sem *);
+< extern void	SemSignal (Sem *);
+< 
+---
+> 
+> #define INVALID_SEM -1
+> #define INVALID_LOCK -1
+> #define INVALID_PROC -1
+> #define INVALID_COND -1
+> typedef struct Sem {
+>     Queue	waiting;
+>     int		count;
+>     uint32	inuse; 		//indicates whether the semaphore is being
+>                         	//used by any process
+> } Sem;
+> 
+> extern void	SemInit (Sem *, int);
+> extern void	SemWait (Sem *);
+> extern void	SemSignal (Sem *);
+> 
+45,46c45,47
+< 
+< 	//Your stuff goes here
+---
+> 	Sem semlock;
+>         int pid;
+> 	uint32 inuse;
+50,51c51,54
+< 
+< 	//Your stuff goes here
+---
+>         int condcounter;
+> 	uint32 inuse;
+> 	lock_t lockcond;
+> 	Sem semcond;
+54a58
+> 
+syscall.h
+sysproc.c
+traps.c
+traps.h
+userprog.c
+userprog2.c
